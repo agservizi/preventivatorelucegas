@@ -4,110 +4,290 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Preventivatore Luce e Gas</title>
-    <!-- Collegamento a Tailwind CSS tramite CDN -->
+    <!-- Tailwind CSS -->
     <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
-    <!-- Collegamento al file CSS esterno -->
+    <!-- Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <!-- FontAwesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <!-- jsPDF per esportazione PDF -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <!-- CSS personalizzato -->
     <link rel="stylesheet" href="style.css">
 </head>
-<body class="bg-gray-100">
+<body class="bg-gradient-to-br from-blue-100 via-white to-green-100">
     <div class="container mx-auto p-4">
-        <h1 class="text-2xl font-bold text-center mb-6">Preventivatore Luce e Gas</h1>
-        <div class="bg-white p-6 rounded-lg shadow-md">
-            <!-- Form per l'inserimento dei consumi -->
-            <form id="preventivatoreForm">
-                <div class="mb-4">
-                    <label for="tipoServizio" class="block text-sm font-medium text-gray-700">Seleziona il servizio:</label>
-                    <select id="tipoServizio" class="mt-1 block w-full p-2 border border-gray-300 rounded-md">
+        <h1 class="text-4xl font-bold text-center mb-8 animate-bounce">
+            <i class="fas fa-bolt text-yellow-500"></i> Preventivatore Luce e Gas <i class="fas fa-fire text-orange-500"></i>
+        </h1>
+        <div class="bg-white p-8 rounded-lg shadow-lg transform transition-all duration-500">
+            <!-- Pulsante tema scuro -->
+            <button id="toggleDarkMode" class="absolute top-4 right-4 p-2 bg-gray-200 rounded-full hover:bg-gray-300">
+                <i class="fas fa-moon"></i>
+            </button>
+
+            <!-- Form -->
+            <form id="preventivatoreForm" class="space-y-6">
+                <div class="relative">
+                    <label for="tipoServizio" class="block text-sm font-medium text-gray-700">Seleziona il servizio: 
+                        <span class="tooltip" data-tip="Scegli tra luce, gas o entrambi">ℹ️</span></label>
+                    <select id="tipoServizio" class="mt-1 block w-full p-3 border border-gray-300 rounded-md">
                         <option value="luce">Luce</option>
                         <option value="gas">Gas</option>
+                        <option value="entrambi">Entrambi</option>
                     </select>
                 </div>
-                <div class="mb-4">
-                    <label for="consumo" class="block text-sm font-medium text-gray-700">Consumo annuo (kWh per luce, Smc per gas):</label>
-                    <input type="number" id="consumo" class="mt-1 block w-full p-2 border border-gray-300 rounded-md" required>
+                <div id="consumoLuceDiv">
+                    <label for="consumoLuce" class="block text-sm font-medium text-gray-700">Consumo annuo luce (kWh): 
+                        <span class="tooltip" data-tip="Inserisci i kWh annui di energia elettrica">ℹ️</span></label>
+                    <input type="number" id="consumoLuce" class="mt-1 block w-full p-3 border border-gray-300 rounded-md" required>
                 </div>
-                <button type="submit" class="w-full bg-blue-500 text-white p-2 rounded-md">Calcola Preventivo</button>
+                <div id="consumoGasDiv" class="hidden">
+                    <label for="consumoGas" class="block text-sm font-medium text-gray-700">Consumo annuo gas (Smc): 
+                        <span class="tooltip" data-tip="Inserisci gli Smc annui di gas">ℹ️</span></label>
+                    <input type="number" id="consumoGas" class="mt-1 block w-full p-3 border border-gray-300 rounded-md">
+                </div>
+                <div id="costoPrecedenteDiv" class="mt-4">
+                    <label for="costoPrecedente" class="block text-sm font-medium text-gray-700">Costo annuo precedente (€, opzionale):</label>
+                    <input type="number" id="costoPrecedente" class="mt-1 block w-full p-3 border border-gray-300 rounded-md">
+                </div>
+                <div class="flex space-x-4">
+                    <button type="submit" class="flex-1 bg-blue-600 text-white p-3 rounded-md hover:bg-blue-700">
+                        <i class="fas fa-calculator"></i> Calcola
+                    </button>
+                    <button type="button" id="resetBtn" class="flex-1 bg-gray-500 text-white p-3 rounded-md hover:bg-gray-600">
+                        <i class="fas fa-undo"></i> Reset
+                    </button>
+                </div>
             </form>
 
             <!-- Risultati -->
-            <div id="risultato" class="mt-6 hidden">
-                <h2 class="text-xl font-bold">Risultato</h2>
+            <div id="risultato" class="mt-8 hidden">
+                <h2 class="text-2xl font-bold text-blue-600 flex items-center">
+                    Risultato <span id="spinner" class="ml-2 fas fa-spinner fa-spin hidden"></span>
+                </h2>
+                <div id="suggerimenti" class="mt-4 text-green-600"></div>
                 <div id="dettagliPreventivo" class="mt-4"></div>
+                <canvas id="risultatoChart" class="mt-6"></canvas>
+                <div class="mt-6 flex space-x-4">
+                    <button id="salvaRisultati" class="bg-green-500 text-white p-2 rounded-md hover:bg-green-600">
+                        <i class="fas fa-save"></i> Salva
+                    </button>
+                    <button id="esportaPDF" class="bg-purple-500 text-white p-2 rounded-md hover:bg-purple-600">
+                        <i class="fas fa-file-pdf"></i> Esporta PDF
+                    </button>
+                    <button id="cercaOfferte" class="bg-yellow-500 text-white p-2 rounded-md hover:bg-yellow-600">
+                        <i class="fas fa-search"></i> Cerca Offerte
+                    </button>
+                </div>
             </div>
         </div>
     </div>
 
     <script>
-        // Dati ARERA (aggiornati manualmente)
+        // Dati ARERA
         const PUN_LUCE = 0.15304;  // €/kWh
         const PSV_GAS = 0.5712;    // €/Smc
 
-        // Spread dei gestori (aggiornati con i valori forniti)
+        // Spread dei gestori
         const SPREAD_GESTORI = {
-            "Fastweb Energia": { luce: 0.050, gas: null },  // Solo luce
+            "Fastweb Energia": { luce: 0.050, gas: null },
             "Enel Energia": { luce: 0.0222, gas: 0.0222 },
             "A2A Energia": { luce: 0.028996, gas: 0.13 },
             "Windtre Luce e Gas": { luce: 0.02891, gas: 0.0951 }
         };
 
-        // Funzione per calcolare i prezzi finali
-        function calcolaPrezzi(tipoServizio, consumo) {
+        // Mostra/nascondi campo consumo gas
+        const tipoServizioSelect = document.getElementById('tipoServizio');
+        const consumoGasDiv = document.getElementById('consumoGasDiv');
+        tipoServizioSelect.addEventListener('change', function() {
+            if (this.value === 'entrambi') {
+                consumoGasDiv.classList.remove('hidden');
+                document.getElementById('consumoGas').setAttribute('required', 'true');
+            } else {
+                consumoGasDiv.classList.add('hidden');
+                document.getElementById('consumoGas').removeAttribute('required');
+            }
+        });
+
+        // Tema scuro
+        document.getElementById('toggleDarkMode').addEventListener('click', function() {
+            document.body.classList.toggle('dark-mode');
+            this.querySelector('i').classList.toggle('fa-moon');
+            this.querySelector('i').classList.toggle('fa-sun');
+        });
+
+        // Calcolo prezzi
+        function calcolaPrezzi(tipoServizio, consumoLuce, consumoGas, costoPrecedente) {
             const risultati = [];
             for (const [gestore, spread] of Object.entries(SPREAD_GESTORI)) {
-                let prezzo = null;
-                if (tipoServizio === "luce" && spread.luce !== null) {
-                    prezzo = (PUN_LUCE + spread.luce) * consumo;
-                } else if (tipoServizio === "gas" && spread.gas !== null) {
-                    prezzo = (PSV_GAS + spread.gas) * consumo;
+                if (tipoServizio === "luce" || tipoServizio === "entrambi") {
+                    if (spread.luce !== null) {
+                        const costoBase = PUN_LUCE * consumoLuce;
+                        const costoSpread = spread.luce * consumoLuce;
+                        const prezzo = costoBase + costoSpread;
+                        risultati.push({
+                            gestore,
+                            prezzo: prezzo.toFixed(2),
+                            tipoServizio: "luce",
+                            costoBase: costoBase.toFixed(2),
+                            costoSpread: costoSpread.toFixed(2),
+                            risparmio: costoPrecedente ? (costoPrecedente - prezzo).toFixed(2) : null
+                        });
+                    }
                 }
-
-                if (prezzo !== null) {
-                    risultati.push({
-                        gestore,
-                        prezzo: prezzo.toFixed(2),
-                        tipoServizio
-                    });
+                if (tipoServizio === "gas" || tipoServizio === "entrambi") {
+                    if (spread.gas !== null) {
+                        const cons = tipoServizio === "gas" ? consumoLuce : consumoGas;
+                        const costoBase = PSV_GAS * cons;
+                        const costoSpread = spread.gas * cons;
+                        const prezzo = costoBase + costoSpread;
+                        risultati.push({
+                            gestore,
+                            prezzo: prezzo.toFixed(2),
+                            tipoServizio: "gas",
+                            costoBase: costoBase.toFixed(2),
+                            costoSpread: costoSpread.toFixed(2),
+                            risparmio: costoPrecedente ? (costoPrecedente - prezzo).toFixed(2) : null
+                        });
+                    }
                 }
             }
             return risultati;
         }
 
-        // Gestione del form
+        // Grafico
+        function creaGrafico(risultati) {
+            const ctx = document.getElementById('risultatoChart').getContext('2d');
+            const labels = risultati.map(r => `${r.gestore} (${r.tipoServizio})`);
+            const prezzi = risultati.map(r => r.prezzo);
+            new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        label: 'Costo Annuo (€)',
+                        data: prezzi,
+                        backgroundColor: risultati.map(r => r.tipoServizio === "luce" ? 'rgba(54, 162, 235, 0.7)' : 'rgba(255, 99, 132, 0.7)'),
+                        borderColor: risultati.map(r => r.tipoServizio === "luce" ? 'rgba(54, 162, 235, 1)' : 'rgba(255, 99, 132, 1)'),
+                        borderWidth: 1
+                    }]
+                },
+                options: {
+                    scales: { y: { beginAtZero: true } },
+                    animation: { duration: 1000, easing: 'easeInOutQuad' },
+                    plugins: {
+                        tooltip: {
+                            callbacks: {
+                                label: function(context) {
+                                    const r = risultati[context.dataIndex];
+                                    return `Costo: €${r.prezzo} (Base: €${r.costoBase}, Spread: €${r.costoSpread})`;
+                                }
+                            }
+                        }
+                    }
+                }
+            });
+        }
+
+        // Suggerimenti risparmio
+        function generaSuggerimenti(consumoLuce, consumoGas) {
+            let suggerimenti = [];
+            if (consumoLuce > 3000) suggerimenti.push("Considera lampadine LED per ridurre il consumo di luce.");
+            if (consumoGas > 1000) suggerimenti.push("Valuta un termostato smart per ottimizzare il gas.");
+            return suggerimenti.length > 0 ? suggerimenti.join(" ") : "I tuoi consumi sembrano già ottimizzati!";
+        }
+
+        // Gestione form
         document.getElementById('preventivatoreForm').addEventListener('submit', function(event) {
             event.preventDefault();
-
             const tipoServizio = document.getElementById('tipoServizio').value;
-            const consumo = parseFloat(document.getElementById('consumo').value);
+            const consumoLuce = parseFloat(document.getElementById('consumoLuce').value);
+            const consumoGas = parseFloat(document.getElementById('consumoGas').value) || 0;
+            const costoPrecedente = parseFloat(document.getElementById('costoPrecedente').value) || 0;
 
-            if (isNaN(consumo) || consumo <= 0) {
-                alert("Inserisci un consumo valido.");
+            if (isNaN(consumoLuce) || consumoLuce <= 0 || (tipoServizio === "entrambi" && (isNaN(consumoGas) || consumoGas <= 0))) {
+                alert("Inserisci consumi validi.");
                 return;
             }
 
-            // Calcola i prezzi
-            const risultati = calcolaPrezzi(tipoServizio, consumo);
+            document.getElementById('spinner').classList.remove('hidden');
+            setTimeout(() => {
+                const risultati = calcolaPrezzi(tipoServizio, consumoLuce, consumoGas, costoPrecedente);
+                const risultatoDiv = document.getElementById('risultato');
+                const dettagliPreventivo = document.getElementById('dettagliPreventivo');
+                const suggerimentiDiv = document.getElementById('suggerimenti');
 
-            // Mostra i risultati
-            const risultatoDiv = document.getElementById('risultato');
-            const dettagliPreventivo = document.getElementById('dettagliPreventivo');
+                if (risultati.length > 0) {
+                    let html = '<div class="space-y-4 animate-fadeIn">';
+                    risultati.forEach(r => {
+                        html += `
+                            <div class="p-4 ${r.tipoServizio === 'luce' ? 'bg-blue-50' : 'bg-red-50'} rounded-md">
+                                <strong>${r.gestore}:</strong> €${r.prezzo} (${r.tipoServizio === "luce" ? "Luce" : "Gas"}) 
+                                <br><span class="text-sm">Base: €${r.costoBase}, Spread: €${r.costoSpread}${r.risparmio ? `, Risparmio: €${r.risparmio}` : ''}</span>
+                                <button class="preferitoBtn ml-2 text-yellow-500" data-gestore="${r.gestore}"><i class="far fa-heart"></i></button>
+                            </div>
+                        `;
+                    });
+                    html += '</div>';
+                    dettagliPreventivo.innerHTML = html;
+                    suggerimentiDiv.innerHTML = generaSuggerimenti(consumoLuce, consumoGas);
+                    risultatoDiv.classList.remove('hidden');
+                    creaGrafico(risultati);
 
-            if (risultati.length > 0) {
-                let html = '<div class="space-y-2">';
-                risultati.forEach(r => {
-                    html += `
-                        <div class="p-2 bg-gray-50 rounded-md">
-                            <strong>${r.gestore}:</strong> €${r.prezzo} (${r.tipoServizio === "luce" ? "Luce" : "Gas"})
-                        </div>
-                    `;
-                });
-                html += '</div>';
-                dettagliPreventivo.innerHTML = html;
-                risultatoDiv.classList.remove('hidden');
-            } else {
-                dettagliPreventivo.innerHTML = "<p>Nessun risultato trovato per il servizio selezionato.</p>";
-                risultatoDiv.classList.remove('hidden');
-            }
+                    // Preferiti
+                    document.querySelectorAll('.preferitoBtn').forEach(btn => {
+                        btn.addEventListener('click', function() {
+                            this.querySelector('i').classList.toggle('far');
+                            this.querySelector('i').classList.toggle('fas');
+                            const gestore = this.dataset.gestore;
+                            let preferiti = JSON.parse(localStorage.getItem('preferiti') || '[]');
+                            if (preferiti.includes(gestore)) {
+                                preferiti = preferiti.filter(p => p !== gestore);
+                            } else {
+                                preferiti.push(gestore);
+                            }
+                            localStorage.setItem('preferiti', JSON.stringify(preferiti));
+                        });
+                    });
+                }
+                document.getElementById('spinner').classList.add('hidden');
+            }, 500);
+        });
+
+        // Salva risultati
+        document.getElementById('salvaRisultati').addEventListener('click', function() {
+            const risultati = document.getElementById('dettagliPreventivo').innerHTML;
+            localStorage.setItem('ultimiRisultati', risultati);
+            alert('Risultati salvati!');
+        });
+
+        // Esporta PDF
+        document.getElementById('esportaPDF').addEventListener('click', function() {
+            const { jsPDF } = window.jspdf;
+            const doc = new jsPDF();
+            doc.text("Preventivatore Luce e Gas - Risultati", 10, 10);
+            doc.fromHTML(document.getElementById('dettagliPreventivo'), 10, 20);
+            doc.save('preventivo_luce_gas.pdf');
+        });
+
+        // Cerca offerte (placeholder)
+        document.getElementById('cercaOfferte').addEventListener('click', function() {
+            alert("Funzionalità di ricerca offerte in sviluppo. Posso cercare su X o web se mi dai il permesso!");
+        });
+
+        // Reset
+        document.getElementById('resetBtn').addEventListener('click', function() {
+            document.getElementById('preventivatoreForm').reset();
+            document.getElementById('risultato').classList.add('hidden');
+            document.getElementById('dettagliPreventivo').innerHTML = '';
+            document.getElementById('suggerimenti').innerHTML = '';
+            const canvas = document.getElementById('risultatoChart');
+            canvas.getContext('2d').clearRect(0, 0, canvas.width, canvas.height);
+            consumoGasDiv.classList.add('hidden');
+            document.getElementById('consumoGas').removeAttribute('required');
         });
     </script>
 </body>
 </html>
+​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​
