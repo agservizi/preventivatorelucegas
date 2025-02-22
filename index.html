@@ -97,16 +97,32 @@
             "Windtre Luce e Gas": { luce: 0.02891, gas: 0.0951 }
         };
 
-        // Mostra/nascondi campo consumo gas
+        // Mostra/nascondi campi in base al tipo di servizio
         const tipoServizioSelect = document.getElementById('tipoServizio');
+        const consumoLuceDiv = document.getElementById('consumoLuceDiv');
         const consumoGasDiv = document.getElementById('consumoGasDiv');
+        const consumoLuceInput = document.getElementById('consumoLuce');
+        const consumoGasInput = document.getElementById('consumoGas');
+
         tipoServizioSelect.addEventListener('change', function() {
-            if (this.value === 'entrambi') {
+            if (this.value === 'gas') {
+                // Nascondi il campo luce e mostra il campo gas
+                consumoLuceDiv.classList.add('hidden');
                 consumoGasDiv.classList.remove('hidden');
-                document.getElementById('consumoGas').setAttribute('required', 'true');
-            } else {
+                consumoGasInput.setAttribute('required', 'true');
+                consumoLuceInput.removeAttribute('required');
+            } else if (this.value === 'luce') {
+                // Mostra il campo luce e nascondi il campo gas
+                consumoLuceDiv.classList.remove('hidden');
                 consumoGasDiv.classList.add('hidden');
-                document.getElementById('consumoGas').removeAttribute('required');
+                consumoLuceInput.setAttribute('required', 'true');
+                consumoGasInput.removeAttribute('required');
+            } else if (this.value === 'entrambi') {
+                // Mostra entrambi i campi
+                consumoLuceDiv.classList.remove('hidden');
+                consumoGasDiv.classList.remove('hidden');
+                consumoLuceInput.setAttribute('required', 'true');
+                consumoGasInput.setAttribute('required', 'true');
             }
         });
 
@@ -138,9 +154,8 @@
                 }
                 if (tipoServizio === "gas" || tipoServizio === "entrambi") {
                     if (spread.gas !== null) {
-                        const cons = tipoServizio === "gas" ? consumoLuce : consumoGas;
-                        const costoBase = PSV_GAS * cons;
-                        const costoSpread = spread.gas * cons;
+                        const costoBase = PSV_GAS * consumoGas;
+                        const costoSpread = spread.gas * consumoGas;
                         const prezzo = costoBase + costoSpread;
                         risultati.push({
                             gestore,
@@ -202,11 +217,13 @@
         document.getElementById('preventivatoreForm').addEventListener('submit', function(event) {
             event.preventDefault();
             const tipoServizio = document.getElementById('tipoServizio').value;
-            const consumoLuce = parseFloat(document.getElementById('consumoLuce').value);
+            const consumoLuce = parseFloat(document.getElementById('consumoLuce').value) || 0;
             const consumoGas = parseFloat(document.getElementById('consumoGas').value) || 0;
             const costoPrecedente = parseFloat(document.getElementById('costoPrecedente').value) || 0;
 
-            if (isNaN(consumoLuce) || consumoLuce <= 0 || (tipoServizio === "entrambi" && (isNaN(consumoGas) || consumoGas <= 0))) {
+            if ((tipoServizio === "luce" && (isNaN(consumoLuce) || consumoLuce <= 0)) ||
+                (tipoServizio === "gas" && (isNaN(consumoGas) || consumoGas <= 0)) ||
+                (tipoServizio === "entrambi" && (isNaN(consumoLuce) || consumoLuce <= 0 || isNaN(consumoGas) || consumoGas <= 0))) {
                 alert("Inserisci consumi validi.");
                 return;
             }
@@ -284,10 +301,11 @@
             document.getElementById('suggerimenti').innerHTML = '';
             const canvas = document.getElementById('risultatoChart');
             canvas.getContext('2d').clearRect(0, 0, canvas.width, canvas.height);
+            consumoLuceDiv.classList.remove('hidden');
             consumoGasDiv.classList.add('hidden');
-            document.getElementById('consumoGas').removeAttribute('required');
+            consumoLuceInput.setAttribute('required', 'true');
+            consumoGasInput.removeAttribute('required');
         });
     </script>
 </body>
 </html>
-​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​

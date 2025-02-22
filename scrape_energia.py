@@ -34,11 +34,15 @@ def calcola_prezzi(pun_luce, psv_gas, spread_gestori):
         })
     return risultati
 
+# Funzione per salvare i risultati in un file CSV
+def salva_in_csv(risultati):
+    df = pd.DataFrame(risultati)
+    df.to_csv("prezzi_energia.csv", index=False)
+    print("Dati salvati in prezzi_energia.csv")
+    print(df)
+
 # Calcola i prezzi finali
 risultati = calcola_prezzi(PUN_LUCE, PSV_GAS, SPREAD_GESTORI)
 
 # Salva i risultati in un file CSV
-df = pd.DataFrame(risultati)
-df.to_csv("prezzi_energia.csv", index=False)
-print("Dati salvati in prezzi_energia.csv")
-print(df)
+salva_in_csv(risultati)
