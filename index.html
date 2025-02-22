@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Preventivatore Luce e Gas</title>
+    <!-- Collegamento a Tailwind CSS tramite CDN -->
+    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+    <!-- Collegamento al file CSS esterno -->
+    <link rel="stylesheet" href="style.css">
+</head>
+<body class="bg-gray-100">
+    <div class="container mx-auto p-4">
+        <h1 class="text-2xl font-bold text-center mb-6">Preventivatore Luce e Gas</h1>
+        <div class="bg-white p-6 rounded-lg shadow-md">
+            <!-- Form per l'inserimento dei consumi -->
+            <form id="preventivatoreForm">
+                <div class="mb-4">
+                    <label for="tipoServizio" class="block text-sm font-medium text-gray-700">Seleziona il servizio:</label>
+                    <select id="tipoServizio" class="mt-1 block w-full p-2 border border-gray-300 rounded-md">
+                        <option value="luce">Luce</option>
+                        <option value="gas">Gas</option>
+                    </select>
+                </div>
+                <div class="mb-4">
+                    <label for="consumo" class="block text-sm font-medium text-gray-700">Consumo annuo (kWh per luce, Smc per gas):</label>
+                    <input type="number" id="consumo" class="mt-1 block w-full p-2 border border-gray-300 rounded-md" required>
+                </div>
+                <button type="submit" class="w-full bg-blue-500 text-white p-2 rounded-md">Calcola Preventivo</button>
+            </form>
+
+            <!-- Risultati -->
+            <div id="risultato" class="mt-6 hidden">
+                <h2 class="text-xl font-bold">Risultato</h2>
+                <div id="dettagliPreventivo" class="mt-4"></div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Dati ARERA (aggiornati manualmente)
+        const PUN_LUCE = 0.15304;  // €/kWh
+        const PSV_GAS = 0.5712;    // €/Smc
+
+        // Spread dei gestori (aggiornati con i valori forniti)
+        const SPREAD_GESTORI = {
+            "Fastweb Energia": { luce: 0.050, gas: null },  // Solo luce
+            "Enel Energia": { luce: 0.0222, gas: 0.0222 },
+            "A2A Energia": { luce: 0.028996, gas: 0.13 },
+            "Windtre Luce e Gas": { luce: 0.02891, gas: 0.0951 }
+        };
+
+        // Funzione per calcolare i prezzi finali
+        function calcolaPrezzi(tipoServizio, consumo) {
+            const risultati = [];
+            for (const [gestore, spread] of Object.entries(SPREAD_GESTORI)) {
+                let prezzo = null;
+                if (tipoServizio === "luce" && spread.luce !== null) {
+                    prezzo = (PUN_LUCE + spread.luce) * consumo;
+                } else if (tipoServizio === "gas" && spread.gas !== null) {
+                    prezzo = (PSV_GAS + spread.gas) * consumo;
+                }
+
+                if (prezzo !== null) {
+                    risultati.push({
+                        gestore,
+                        prezzo: prezzo.toFixed(2),
+                        tipoServizio
+                    });
+                }
+            }
+            return risultati;
+        }
+
+        // Gestione del form
+        document.getElementById('preventivatoreForm').addEventListener('submit', function(event) {
+            event.preventDefault();
+
+            const tipoServizio = document.getElementById('tipoServizio').value;
+            const consumo = parseFloat(document.getElementById('consumo').value);
+
+            if (isNaN(consumo) || consumo <= 0) {
+                alert("Inserisci un consumo valido.");
+                return;
+            }
+
+            // Calcola i prezzi
+            const risultati = calcolaPrezzi(tipoServizio, consumo);
+
+            // Mostra i risultati
+            const risultatoDiv = document.getElementById('risultato');
+            const dettagliPreventivo = document.getElementById('dettagliPreventivo');
+
+            if (risultati.length > 0) {
+                let html = '<div class="space-y-2">';
+                risultati.forEach(r => {
+                    html += `
+                        <div class="p-2 bg-gray-50 rounded-md">
+                            <strong>${r.gestore}:</strong> €${r.prezzo} (${r.tipoServizio === "luce" ? "Luce" : "Gas"})
+                        </div>
+                    `;
+                });
+                html += '</div>';
+                dettagliPreventivo.innerHTML = html;
+                risultatoDiv.classList.remove('hidden');
+            } else {
+                dettagliPreventivo.innerHTML = "<p>Nessun risultato trovato per il servizio selezionato.</p>";
+                risultatoDiv.classList.remove('hidden');
+            }
+        });
+    </script>
+</body>
+</html>
