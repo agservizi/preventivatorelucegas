@@ -9,6 +9,8 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <link rel="stylesheet" href="style.css">
+    <!-- Tidio Chat Integration -->
+    <script src="//code.tidio.co/zodg3gcxcfvwix4vn75hrqq1vhj1wbkw.js" async></script>
 </head>
 <body class="bg-gradient-to-br from-blue-100 via-white to-green-100">
     <div class="container mx-auto p-4">
@@ -62,6 +64,13 @@
                     <label for="costoPrecedente" class="block text-sm font-medium text-gray-700">Costo precedente (€, opzionale):</label>
                     <input type="number" id="costoPrecedente" class="mt-1 block w-full p-3 border border-gray-300 rounded-md">
                 </div>
+                <div id="premiumDiv" class="mt-4">
+                    <label for="email" class="block text-sm font-medium text-gray-700">Email per notifiche premium:</label>
+                    <input type="email" id="email" class="mt-1 block w-full p-3 border border-gray-300 rounded-md">
+                    <button id="attivaNotifiche" class="mt-2 bg-blue-600 text-white p-3 rounded-md hover:bg-blue-700">
+                        <i class="fas fa-bell"></i> Attiva Notifiche
+                    </button>
+                </div>
                 <div class="flex space-x-4">
                     <button type="submit" class="flex-1 bg-blue-600 text-white p-3 rounded-md hover:bg-blue-700">
                         <i class="fas fa-calculator"></i> Calcola
@@ -77,6 +86,7 @@
                 </h2>
                 <div id="suggerimenti" class="mt-4 text-green-600"></div>
                 <div id="dettagliPreventivo" class="mt-4"></div>
+                <div id="improntaCarbonio" class="mt-4 text-red-600 font-bold"></div>
                 <canvas id="risultatoChart" class="mt-6"></canvas>
                 <div class="mt-6 flex space-x-4">
                     <button id="salvaRisultati" class="bg-green-500 text-white p-2 rounded-md hover:bg-green-600">
@@ -88,10 +98,35 @@
                     <button id="cercaOfferte" class="bg-yellow-500 text-white p-2 rounded-md hover:bg-yellow-600">
                         <i class="fas fa-search"></i> Cerca Offerte
                     </button>
+                    <button id="aggiornaSuggerimenti" class="bg-blue-500 text-white p-2 rounded-md hover:bg-blue-600">
+                        <i class="fas fa-sync"></i> Aggiorna Suggerimenti
+                    </button>
                 </div>
+                <div id="pianiOttimali" class="mt-4 text-blue-600 font-bold"></div>
             </div>
         </div>
     </div>
     <script src="script.js"></script>
+    <script src="premium.js"></script>
+    <script src="pianiTariffari.js"></script>
+    <script>
+        document.getElementById('aggiornaSuggerimenti').addEventListener('click', function() {
+            const consumoLuce = parseFloat(document.getElementById('consumoLuce').value) || 0;
+            const consumoGas = parseFloat(document.getElementById('consumoGas').value) || 0;
+            const periodoLuce = document.querySelector('input[name="periodoLuce"]:checked')?.value || "mensile";
+            const periodoGas = document.querySelector('input[name="periodoGas"]:checked')?.value || "bimestrale";
+            aggiornaSuggerimenti(consumoLuce, consumoGas, periodoLuce, periodoGas);
+        });
+
+        document.getElementById('attivaNotifiche').addEventListener('click', function() {
+            const email = document.getElementById('email').value;
+            if (!email) {
+                alert("Inserisci un'email valida per attivare le notifiche premium.");
+                return;
+            }
+            inviaNotifichePremium(email, ultimiRisultati, document.getElementById('suggerimenti').innerText);
+            alert("Notifiche premium attivate! Riceverai aggiornamenti via email.");
+        });
+    </script>
 </body>
 </html>
