@@ -57,6 +57,8 @@ function calcolaPrezzi(tipoServizio, consumoLuce, consumoGas, costoPrecedente, p
                 const costoComm = spread.costoCommLuce * mesiLuce;
                 const prezzoEnergia = costoBase + costoSpread;
                 const prezzoTotale = prezzoEnergia + costoComm;
+                const risparmioMensile = costoPrecedente ? ((costoPrecedente - prezzoTotale) / mesiLuce).toFixed(2) : null;
+                const costoAnnuo = (prezzoTotale / mesiLuce) * (tipoServizio === "luce" ? 12 : 6); // 12 mesi per luce, 6 bimestri per entrambi
                 risultati.push({
                     gestore,
                     prezzo: prezzoTotale.toFixed(2),
@@ -65,6 +67,8 @@ function calcolaPrezzi(tipoServizio, consumoLuce, consumoGas, costoPrecedente, p
                     costoSpread: costoSpread.toFixed(2),
                     costoComm: costoComm.toFixed(2),
                     risparmio: costoPrecedente ? (costoPrecedente - prezzoTotale).toFixed(2) : null,
+                    risparmioMensile: risparmioMensile,
+                    costoAnnuo: costoAnnuo.toFixed(2),
                     periodo: periodoLuce,
                     mesi: mesiLuce,
                     tipoServizio: "luce"
@@ -79,6 +83,8 @@ function calcolaPrezzi(tipoServizio, consumoLuce, consumoGas, costoPrecedente, p
                 const costoComm = spread.costoCommGas * mesiGas;
                 const prezzoEnergia = costoBase + costoSpread;
                 const prezzoTotale = prezzoEnergia + costoComm;
+                const risparmioMensile = costoPrecedente ? ((costoPrecedente - prezzoTotale) / mesiGas).toFixed(2) : null;
+                const costoAnnuo = (prezzoTotale / mesiGas) * (tipoServizio === "gas" ? 12 : 6); // 12 mesi per gas, 6 bimestri per entrambi
                 risultati.push({
                     gestore,
                     prezzo: prezzoTotale.toFixed(2),
@@ -87,6 +93,8 @@ function calcolaPrezzi(tipoServizio, consumoLuce, consumoGas, costoPrecedente, p
                     costoSpread: costoSpread.toFixed(2),
                     costoComm: costoComm.toFixed(2),
                     risparmio: costoPrecedente ? (costoPrecedente - prezzoTotale).toFixed(2) : null,
+                    risparmioMensile: risparmioMensile,
+                    costoAnnuo: costoAnnuo.toFixed(2),
                     periodo: periodoGas,
                     mesi: mesiGas,
                     tipoServizio: "gas"
@@ -98,17 +106,19 @@ function calcolaPrezzi(tipoServizio, consumoLuce, consumoGas, costoPrecedente, p
 }
 
 // Creazione grafico
-function creaGrafico(risultati) {
+function creaGrafico(risultati, mostraMediaMensile = false) {
     const ctx = document.getElementById('risultatoChart').getContext('2d');
     const labels = risultati.map(r => `${r.gestore} (${r.tipoServizio} - ${r.periodo})`);
-    const prezzi = risultati.map(r => r.prezzo);
+    const prezzi = mostraMediaMensile ?
+        risultati.map(r => (parseFloat(r.prezzo) / r.mesi).toFixed(2)) :
+        risultati.map(r => r.prezzo);
 
     new Chart(ctx, {
         type: 'bar',
         data: {
             labels: labels,
             datasets: [{
-                label: 'Costo Totale (€)',
+                label: mostraMediaMensile ? 'Costo Mensile Medio (€)' : 'Costo Totale (€)',
                 data: prezzi,
                 backgroundColor: risultati.map(r => r.tipoServizio === "luce" ? 'rgba(54, 162, 235, 0.7)' : 'rgba(255, 99, 132, 0.7)'),
                 borderColor: risultati.map(r => r.tipoServizio === "luce" ? 'rgba(54, 162, 235, 1)' : 'rgba(255, 99, 132, 1)'),
@@ -123,7 +133,9 @@ function creaGrafico(risultati) {
                     callbacks: {
                         label: function(context) {
                             const r = risultati[context.dataIndex];
-                            return `Costo totale: €${r.prezzo} (${r.periodo}) - Energia: €${r.prezzoEnergia}, Comm: €${r.costoComm}`;
+                            return mostraMediaMensile ?
+                                `Costo mensile medio: €${(parseFloat(r.prezzo) / r.mesi).toFixed(2)} (${r.periodo})` :
+                                `Costo totale: €${r.prezzo} (${r.periodo}) - Energia: €${r.prezzoEnergia}, Comm: €${r.costoComm}`;
                         }
                     }
                 }
@@ -174,6 +186,7 @@ function cercaOfferte() {
 }
 
 let ultimiRisultati = [];
+let mostraMediaMensile = false;
 
 document.getElementById('preventivatoreForm').addEventListener('submit', function(event) {
     event.preventDefault();
@@ -202,11 +215,15 @@ document.getElementById('preventivatoreForm').addEventListener('submit', functio
 
         if (risultati.length > 0) {
             let html = '<div class="space-y-4 animate-fadeIn">';
+            html += '<div class="flex space-x-4 mb-4">';
+            html += '<label><input type="radio" name="visualizzaCosto" value="totale" checked onclick="toggleCosto(false)"> Costo Totale</label>';
+            html += '<label><input type="radio" name="visualizzaCosto" value="mensile" onclick="toggleCosto(true)"> Costo Mensile Medio</label>';
+            html += '</div>';
             risultati.forEach(r => {
                 html += `
                     <div class="p-4 ${r.tipoServizio === 'luce' ? 'bg-blue-50' : 'bg-red-50'} rounded-md">
-                        <strong>${r.gestore}:</strong> €${r.prezzo} (${r.tipoServizio === "luce" ? "Luce" : "Gas"} - ${r.periodo}) 
-                        <br><span class="text-sm">Energia: €${r.prezzoEnergia}, Comm: €${r.costoComm}${r.risparmio ? `, Risparmio: €${r.risparmio}` : ''}</span>
+                        <strong>${r.gestore}:</strong> €${mostraMediaMensile ? (parseFloat(r.prezzo) / r.mesi).toFixed(2) : r.prezzo} (${r.tipoServizio === "luce" ? "Luce" : "Gas"} - ${r.periodo}) 
+                        <br><span class="text-sm">Energia: €${mostraMediaMensile ? (parseFloat(r.prezzoEnergia) / r.mesi).toFixed(2) : r.prezzoEnergia}, Comm: €${mostraMediaMensile ? (parseFloat(r.costoComm) / r.mesi).toFixed(2) : r.costoComm}${r.risparmio ? `, Risparmio: €${mostraMediaMensile ? r.risparmioMensile : r.risparmio}` : ''}, Stima annuale: €${r.costoAnnuo}</span>
                         <button class="preferitoBtn ml-2 text-yellow-500" data-gestore="${r.gestore}"><i class="far fa-heart"></i></button>
                     </div>
                 `;
@@ -216,7 +233,7 @@ document.getElementById('preventivatoreForm').addEventListener('submit', functio
             dettagliPreventivo.innerHTML = html;
             suggerimentiDiv.innerHTML = generaSuggerimenti(consumoLuce, consumoGas, periodoLuce, periodoGas);
             risultatoDiv.classList.remove('hidden');
-            creaGrafico(risultati);
+            creaGrafico(risultati, mostraMediaMensile);
 
             document.querySelectorAll('.preferitoBtn').forEach(btn => {
                 btn.addEventListener('click', function() {
@@ -237,12 +254,43 @@ document.getElementById('preventivatoreForm').addEventListener('submit', functio
     }, 500);
 });
 
+// Toggle tra costo totale e mensile medio
+function toggleCosto(mediaMensile) {
+    mostraMediaMensile = mediaMensile;
+    if (ultimiRisultati.length > 0) {
+        const risultatoDiv = document.getElementById('risultato');
+        const dettagliPreventivo = document.getElementById('dettagliPreventivo');
+        const suggerimentiDiv = document.getElementById('suggerimenti');
+        
+        let html = '<div class="space-y-4 animate-fadeIn">';
+        html += '<div class="flex space-x-4 mb-4">';
+        html += `<label><input type="radio" name="visualizzaCosto" value="totale" ${!mostraMediaMensile ? 'checked' : ''} onclick="toggleCosto(false)"> Costo Totale</label>`;
+        html += `<label><input type="radio" name="visualizzaCosto" value="mensile" ${mostraMediaMensile ? 'checked' : ''} onclick="toggleCosto(true)"> Costo Mensile Medio</label>`;
+        html += '</div>';
+        ultimiRisultati.forEach(r => {
+            html += `
+                <div class="p-4 ${r.tipoServizio === 'luce' ? 'bg-blue-50' : 'bg-red-50'} rounded-md">
+                    <strong>${r.gestore}:</strong> €${mostraMediaMensile ? (parseFloat(r.prezzo) / r.mesi).toFixed(2) : r.prezzo} (${r.tipoServizio === "luce" ? "Luce" : "Gas"} - ${r.periodo}) 
+                    <br><span class="text-sm">Energia: €${mostraMediaMensile ? (parseFloat(r.prezzoEnergia) / r.mesi).toFixed(2) : r.prezzoEnergia}, Comm: €${mostraMediaMensile ? (parseFloat(r.costoComm) / r.mesi).toFixed(2) : r.costoComm}${r.risparmio ? `, Risparmio: €${mostraMediaMensile ? r.risparmioMensile : r.risparmio}` : ''}, Stima annuale: €${r.costoAnnuo}</span>
+                    <button class="preferitoBtn ml-2 text-yellow-500" data-gestore="${r.gestore}"><i class="far fa-heart"></i></button>
+                </div>
+            `;
+        });
+        html += '<p class="text-sm text-gray-600 mt-4">Nota: I costi mostrati sono orientativi e possono variare in base a fattori come oneri di sistema, IVA e promozioni temporanee dei gestori.</p>';
+        html += '</div>';
+        dettagliPreventivo.innerHTML = html;
+        creaGrafico(ultimiRisultati, mostraMediaMensile);
+    }
+}
+
+// Salva risultati
 document.getElementById('salvaRisultati').addEventListener('click', function() {
     const risultati = document.getElementById('dettagliPreventivo').innerHTML;
     localStorage.setItem('ultimiRisultati', risultati);
     alert('Risultati salvati!');
 });
 
+// Esporta PDF
 document.getElementById('esportaPDF').addEventListener('click', function() {
     const { jsPDF } = window.jspdf;
     const doc = new jsPDF();
@@ -252,7 +300,7 @@ document.getElementById('esportaPDF').addEventListener('click', function() {
 
     let y = 20;
     ultimiRisultati.forEach(r => {
-        const testo = `${r.gestore}: €${r.prezzo} (${r.tipoServizio === "luce" ? "Luce" : "Gas"} - ${r.periodo}) - Energia: €${r.prezzoEnergia}, Comm: €${r.costoComm}${r.risparmio ? `, Risparmio: €${r.risparmio}` : ''}`;
+        const testo = `${r.gestore}: €${mostraMediaMensile ? (parseFloat(r.prezzo) / r.mesi).toFixed(2) : r.prezzo} (${r.tipoServizio === "luce" ? "Luce" : "Gas"} - ${r.periodo}) - Energia: €${mostraMediaMensile ? (parseFloat(r.prezzoEnergia) / r.mesi).toFixed(2) : r.prezzoEnergia}, Comm: €${mostraMediaMensile ? (parseFloat(r.costoComm) / r.mesi).toFixed(2) : r.costoComm}${r.risparmio ? `, Risparmio: €${mostraMediaMensile ? r.risparmioMensile : r.risparmio}` : ''}, Stima annuale: €${r.costoAnnuo}`;
         doc.text(testo, 10, y);
         y += 10;
     });
@@ -260,11 +308,13 @@ document.getElementById('esportaPDF').addEventListener('click', function() {
     doc.save('preventivo_luce_gas.pdf');
 });
 
+// Cerca offerte
 document.getElementById('cercaOfferte').addEventListener('click', function() {
     document.getElementById('offerteEsterno')?.remove();
     cercaOfferte();
 });
 
+// Reset
 document.getElementById('resetBtn').addEventListener('click', function() {
     document.getElementById('preventivatoreForm').reset();
     document.getElementById('risultato').classList.add('hidden');
@@ -280,4 +330,5 @@ document.getElementById('resetBtn').addEventListener('click', function() {
     document.querySelector('input[name="periodoLuce"][value="mensile"]').checked = true;
     document.querySelector('input[name="periodoGas"][value="bimestrale"]').checked = true;
     ultimiRisultati = [];
+    mostraMediaMensile = false;
 });
