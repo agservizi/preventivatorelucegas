@@ -7,7 +7,7 @@ const spreadGestori = {
     "Enel Energia": { luce: 0.02226, gas: 0.1100, costoCommLuce: 12.00, costoCommGas: 12.00 },
     "Windtre Luce e Gas": { luce: 0.02891, gas: 0.0951, costoCommLuce: 11.50, costoCommGas: 11.50 },
     "Fastweb Energia": { luce: 0.050, gas: null, costoCommLuce: 13.00, costoCommGas: null },
-    "A2A Energia": { luce: 0.06328, gas: 0.13, costoCommLuce: 9.50, costoCommGas: 9.50 }, // Aggiornato
+    "A2A Energia": { luce: 0.06328, gas: 0.13, costoCommLuce: 9.50, costoCommGas: 9.50 },
     "Egea Energie": { luce: 0.04960, gas: 0.11, costoCommLuce: 9.73, costoCommGas: 9.89 }
 };
 
@@ -47,7 +47,7 @@ document.getElementById('toggleDarkMode').addEventListener('click', function() {
 function calcolaPrezzi(tipoServizio, consumoLuce, consumoGas, costoPrecedente, periodoLuce, periodoGas) {
     const risultati = [];
     const mesiLuce = periodoLuce === "mensile" ? 1 : 2;
-    const mesiGas = periodoGas === "bimestrale" ? 2 : 3;
+    const mesiGas = periodoGas === "mensile" ? 1 : periodoGas === "bimestrale" ? 2 : 3;
 
     for (const [gestore, spread] of Object.entries(spreadGestori)) {
         if (tipoServizio === "luce" || tipoServizio === "entrambi") {
@@ -138,7 +138,7 @@ function generaSuggerimenti(consumoLuce, consumoGas, periodoLuce, periodoGas) {
     const sogliaLuceMensile = 250;
     const sogliaGasMensile = 80;
     const mesiLuce = periodoLuce === "mensile" ? 1 : 2;
-    const mesiGas = periodoGas === "bimestrale" ? 2 : 3;
+    const mesiGas = periodoGas === "mensile" ? 1 : periodoGas === "bimestrale" ? 2 : 3;
 
     if (consumoLuce / mesiLuce > sogliaLuceMensile) {
         suggerimenti.push(`Considera lampadine LED per ridurre il consumo ${periodoLuce} di luce.`);
