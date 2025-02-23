@@ -11,15 +11,28 @@ const spreadGestori = {
     "Egea Energie": { luce: 0.019, gas: 0.015 }
 };
 
-// Mostra/nascondi campo consumo gas
+// Mostra/nascondi campi
 document.getElementById('tipoServizio').addEventListener('change', function() {
+    const consumoLuceDiv = document.getElementById('consumoLuceDiv');
     const consumoGasDiv = document.getElementById('consumoGasDiv');
-    if (this.value === 'entrambi') {
+    const consumoLuceInput = document.getElementById('consumoLuce');
+    const consumoGasInput = document.getElementById('consumoGas');
+    
+    if (this.value === 'gas') {
+        consumoLuceDiv.classList.add('hidden');
         consumoGasDiv.classList.remove('hidden');
-        document.getElementById('consumoGas').setAttribute('required', 'true');
-    } else {
+        consumoGasInput.setAttribute('required', 'true');
+        consumoLuceInput.removeAttribute('required');
+    } else if (this.value === 'luce') {
+        consumoLuceDiv.classList.remove('hidden');
         consumoGasDiv.classList.add('hidden');
-        document.getElementById('consumoGas').removeAttribute('required');
+        consumoLuceInput.setAttribute('required', 'true');
+        consumoGasInput.removeAttribute('required');
+    } else if (this.value === 'entrambi') {
+        consumoLuceDiv.classList.remove('hidden');
+        consumoGasDiv.classList.remove('hidden');
+        consumoLuceInput.setAttribute('required', 'true');
+        consumoGasInput.setAttribute('required', 'true');
     }
 });
 
@@ -30,7 +43,7 @@ document.getElementById('toggleDarkMode').addEventListener('click', function() {
     this.querySelector('i').classList.toggle('fa-sun');
 });
 
-// Calcolo prezzi
+// Calcolo prezzi mensili
 function calcolaPrezzi(tipoServizio, consumoLuce, consumoGas, costoPrecedente) {
     const risultati = [];
     for (const [gestore, spread] of Object.entries(spreadGestori)) {
@@ -80,7 +93,7 @@ function creaGrafico(risultati) {
         data: {
             labels: labels,
             datasets: [{
-                label: 'Costo Annuo (€)',
+                label: 'Costo Mensile (€)',
                 data: prezzi,
                 backgroundColor: risultati.map(r => r.tipoServizio === "luce" ? 'rgba(54, 162, 235, 0.7)' : 'rgba(255, 99, 132, 0.7)'),
                 borderColor: risultati.map(r => r.tipoServizio === "luce" ? 'rgba(54, 162, 235, 1)' : 'rgba(255, 99, 132, 1)'),
@@ -104,12 +117,12 @@ function creaGrafico(risultati) {
     });
 }
 
-// Suggerimenti risparmio
+// Suggerimenti risparmio (adattati a consumi mensili)
 function generaSuggerimenti(consumoLuce, consumoGas) {
     let suggerimenti = [];
-    if (consumoLuce > 3000) suggerimenti.push("Considera lampadine LED per ridurre il consumo di luce.");
-    if (consumoGas > 1000) suggerimenti.push("Valuta un termostato smart per ottimizzare il gas.");
-    return suggerimenti.length > 0 ? suggerimenti.join(" ") : "I tuoi consumi sembrano già ottimizzati!";
+    if (consumoLuce > 250) suggerimenti.push("Considera lampadine LED per ridurre il consumo mensile di luce.");
+    if (consumoGas > 80) suggerimenti.push("Valuta un termostato smart per ottimizzare il gas mensile.");
+    return suggerimenti.length > 0 ? suggerimenti.join(" ") : "I tuoi consumi mensili sembrano già ottimizzati!";
 }
 
 // Offerte dai siti dei gestori (dati di esempio)
@@ -143,19 +156,21 @@ document.getElementById('preventivatoreForm').addEventListener('submit', functio
     event.preventDefault();
 
     const tipoServizio = document.getElementById('tipoServizio').value;
-    const consumoLuce = parseFloat(document.getElementById('consumoLuce').value);
+    const consumoLuce = parseFloat(document.getElementById('consumoLuce').value) || 0;
     const consumoGas = parseFloat(document.getElementById('consumoGas').value) || 0;
     const costoPrecedente = parseFloat(document.getElementById('costoPrecedente').value) || 0;
 
-    if (isNaN(consumoLuce) || consumoLuce <= 0 || (tipoServizio === "entrambi" && (isNaN(consumoGas) || consumoGas <= 0))) {
-        alert("Inserisci consumi validi.");
+    if ((tipoServizio === "luce" && (isNaN(consumoLuce) || consumoLuce <= 0)) ||
+        (tipoServizio === "gas" && (isNaN(consumoGas) || consumoGas <= 0)) ||
+        (tipoServizio === "entrambi" && (isNaN(consumoLuce) || consumoLuce <= 0 || isNaN(consumoGas) || consumoGas <= 0))) {
+        alert("Inserisci consumi mensili validi.");
         return;
     }
 
     document.getElementById('spinner').classList.remove('hidden');
     setTimeout(() => {
         const risultati = calcolaPrezzi(tipoServizio, consumoLuce, consumoGas, costoPrecedente);
-        ultimiRisultati = risultati; // Salva i risultati per il PDF
+        ultimiRisultati = risultati;
         const risultatoDiv = document.getElementById('risultato');
         const dettagliPreventivo = document.getElementById('dettagliPreventivo');
         const suggerimentiDiv = document.getElementById('suggerimenti');
@@ -177,7 +192,6 @@ document.getElementById('preventivatoreForm').addEventListener('submit', functio
             risultatoDiv.classList.remove('hidden');
             creaGrafico(risultati);
 
-            // Gestione preferiti
             document.querySelectorAll('.preferitoBtn').forEach(btn => {
                 btn.addEventListener('click', function() {
                     this.querySelector('i').classList.toggle('far');
@@ -209,7 +223,7 @@ document.getElementById('esportaPDF').addEventListener('click', function() {
     const { jsPDF } = window.jspdf;
     const doc = new jsPDF();
     doc.setFontSize(16);
-    doc.text("Preventivatore Luce e Gas - Risultati", 10, 10);
+    doc.text("Preventivatore Luce e Gas - Risultati Mensili", 10, 10);
     doc.setFontSize(12);
 
     let y = 20;
@@ -219,7 +233,7 @@ document.getElementById('esportaPDF').addEventListener('click', function() {
         y += 10;
     });
 
-    doc.save('preventivo_luce_gas.pdf');
+    doc.save('preventivo_luce_gas_mensile.pdf');
 });
 
 // Cerca offerte
@@ -237,8 +251,9 @@ document.getElementById('resetBtn').addEventListener('click', function() {
     document.getElementById('offerteEsterno')?.remove();
     const canvas = document.getElementById('risultatoChart');
     canvas.getContext('2d').clearRect(0, 0, canvas.width, canvas.height);
+    document.getElementById('consumoLuceDiv').classList.remove('hidden');
     document.getElementById('consumoGasDiv').classList.add('hidden');
+    document.getElementById('consumoLuce').setAttribute('required', 'true');
     document.getElementById('consumoGas').removeAttribute('required');
     ultimiRisultati = [];
 });
-​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​
