@@ -36,21 +36,26 @@ function suggerisciPiani(consumoFuturoLuce, consumoFuturoGas) {
 
 // Funzione per cercare offerte dai siti dei gestori
 async function cercaOfferte() {
-    const { ottieniOfferte } = require('./scrapeTariffe');
-    const offerte = await ottieniOfferte();
+    try {
+        const response = await fetch('http://localhost:3000/api/offerte');
+        const offerte = await response.json();
 
-    let html = '<div class="space-y-4 animate-fadeIn"><h3 class="text-lg font-bold">Offerte dai siti dei gestori:</h3>';
-    offerte.forEach(offerta => {
-        html += `
-            <div class="p-4 bg-gray-100 rounded-md">
-                <strong>${offerta.gestore}:</strong>
-                ${offerta.pianoLuce ? `<br>Luce: Piano: ${offerta.pianoLuce}, Costo: €${offerta.costoLuce}` : ""}
-                ${offerta.pianoGas ? `<br>Gas: Piano: ${offerta.pianoGas}, Costo: €${offerta.costoGas}` : ""}
-            </div>
-        `;
-    });
-    html += '</div>';
-    document.getElementById('dettagliPreventivo').insertAdjacentHTML('afterend', '<div id="offerteEsterno">' + html + '</div>');
+        let html = '<div class="space-y-4 animate-fadeIn"><h3 class="text-lg font-bold">Offerte dai siti dei gestori:</h3>';
+        offerte.forEach(offerta => {
+            html += `
+                <div class="p-4 bg-gray-100 rounded-md">
+                    <strong>${offerta.gestore}:</strong>
+                    ${offerta.pianoLuce ? `<br>Luce: Piano: ${offerta.pianoLuce}, Costo: €${offerta.costoLuce}` : ""}
+                    ${offerta.pianoGas ? `<br>Gas: Piano: ${offerta.pianoGas}, Costo: €${offerta.costoGas}` : ""}
+                </div>
+            `;
+        });
+        html += '</div>';
+        document.getElementById('dettagliPreventivo').insertAdjacentHTML('afterend', '<div id="offerteEsterno">' + html + '</div>');
+    } catch (error) {
+        console.error('Errore durante il recupero delle offerte:', error);
+        alert('Si è verificato un errore durante il recupero delle offerte. Riprova più tardi.');
+    }
 }
 
 module.exports = { suggerisciPiani, cercaOfferte };

@@ -19,11 +19,35 @@ async function scrapeTariffe() {
             const { data } = await axios.get(url);
             const $ = cheerio.load(data);
 
-            // Esempio di selezione dei dati (da adattare in base alla struttura del sito web)
-            const pianoLuce = $('selector-per-piano-luce').text().trim();
-            const costoLuce = parseFloat($('selector-per-costo-luce').text().trim().replace('€', '').replace(',', '.'));
-            const pianoGas = $('selector-per-piano-gas').text().trim();
-            const costoGas = parseFloat($('selector-per-costo-gas').text().trim().replace('€', '').replace(',', '.'));
+            // Esempio di selezione dei dati per Enel Energia (da adattare in base alla struttura del sito web)
+            let pianoLuce = null;
+            let costoLuce = null;
+            let pianoGas = null;
+            let costoGas = null;
+
+            if (gestore === "Enel Energia") {
+                pianoLuce = $('.offer-card__title').first().text().trim();
+                costoLuce = parseFloat($('.offer-card__price').first().text().trim().replace('€', '').replace(',', '.'));
+                pianoGas = $('.offer-card__title').eq(1).text().trim();
+                costoGas = parseFloat($('.offer-card__price').eq(1).text().trim().replace('€', '').replace(',', '.'));
+            } else if (gestore === "Fastweb Energia") {
+                // Aggiorna i selettori per Fastweb Energia
+                pianoLuce = $('.energy-offer__title').first().text().trim();
+                costoLuce = parseFloat($('.energy-offer__price').first().text().trim().replace('€', '').replace(',', '.'));
+                // Fastweb Energia potrebbe non avere offerte gas
+            } else if (gestore === "A2A Energia") {
+                // Aggiorna i selettori per A2A Energia
+                pianoLuce = $('.tariff-card__title').first().text().trim();
+                costoLuce = parseFloat($('.tariff-card__price').first().text().trim().replace('€', '').replace(',', '.'));
+                pianoGas = $('.tariff-card__title').eq(1).text().trim();
+                costoGas = parseFloat($('.tariff-card__price').eq(1).text().trim().replace('€', '').replace(',', '.'));
+            } else if (gestore === "Egea Energie") {
+                // Aggiorna i selettori per Egea Energie
+                pianoLuce = $('.offer-title').first().text().trim();
+                costoLuce = parseFloat($('.offer-price').first().text().trim().replace('€', '').replace(',', '.'));
+                pianoGas = $('.offer-title').eq(1).text().trim();
+                costoGas = parseFloat($('.offer-price').eq(1).text().trim().replace('€', '').replace(',', '.'));
+            }
 
             pianiTariffari.push({
                 gestore,
