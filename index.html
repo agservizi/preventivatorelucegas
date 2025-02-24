@@ -11,6 +11,7 @@
     <link rel="stylesheet" href="style.css">
     <!-- Tidio Chat Integration -->
     <script src="//code.tidio.co/zodg3gcxcfvwix4vn75hrqq1vhj1wbkw.js" async></script>
+    <script id="Cookiebot" src="https://consent.cookiebot.com/uc.js" data-cbid="YOUR_COOKIEBOT_ID" type="text/javascript" async></script>
 </head>
 <body class="bg-gradient-to-br from-blue-100 via-white to-green-100">
     <nav class="bg-white shadow-lg">
@@ -142,6 +143,11 @@
     <script src="premium.js"></script>
     <script src="pianiTariffari.js"></script>
     <script>
+        // Richiedi permesso per le notifiche push
+        if (Notification.permission !== "granted" && Notification.permission !== "denied") {
+            Notification.requestPermission();
+        }
+
         document.getElementById('aggiornaSuggerimenti').addEventListener('click', function() {
             const consumoLuce = parseFloat(document.getElementById('consumoLuce').value) || 0;
             const consumoGas = parseFloat(document.getElementById('consumoGas').value) || 0;
