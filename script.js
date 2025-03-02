@@ -1,6 +1,6 @@
 // Dati ARERA
-const PUN_LUCE = 0.13832;  // €/kWh
-const PSV_GAS = 0.52074;   // €/Smc
+const PUN_LUCE = 0.12838;  // €/kWh
+const PSV_GAS = 0.49262;   // €/Smc
 
 // Spread e costi di commercializzazione per gestore
 const spreadGestori = {
